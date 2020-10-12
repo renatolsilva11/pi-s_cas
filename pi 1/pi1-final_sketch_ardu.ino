@@ -1,61 +1,70 @@
-// IMPORTANDO BIBLIOTECAS
-import processing.serial.*;
-import meter.*;
+bool leituraSensor;
+int LeituraAnalog;
+bool leituraAnterior;
+#define SensorD A0
 
-//VARIAVEIS PARA AS PORTAS SERIAL / TERMOMETRO
-Serial port;
-Meter termometro;
+void setup() {
 
-float umid = 0.00;
-float percent = 0.00;
-void setup()
-{
-  
- size(500,400);  // LARGURA, ALTURA
- // printArray(Serial.list()); // PRINTAR PORTAS SERIAL DISPONIVEIS
- port = new Serial(this, "COM3", 9600); // CONEXÃO COM A PORTA DO ARDUINO
-  background(0, 0, 0);
- termometro = new Meter(this, 27, 50);
- 
- termometro.setTitleFontSize(20);
- termometro.setTitleFontName("Arial bold");
- termometro.setTitle("UMIDADE DO SOLO (%)");
- 
- // MUDAR VALORES DA ESCALA
- String[] scaleLabels = {"0","10","20","30","40","50","60","70","80", "90","100"};
- termometro.setScaleLabels(scaleLabels);
- termometro.setScaleFontSize(18);
- termometro.setScaleFontName("Arial bold");
- termometro.setScaleFontColor(color(200, 30, 70));
- 
- // VALORES DO TERMOMETRO
- termometro.setDisplayDigitalMeterValue(true);
- 
- termometro.setArcColor(color(141, 113, 178));
- termometro.setArcThickness(15);
- termometro.setMaxScaleValue(100);
- termometro.setMinInputSignal(0);
- termometro.setMaxInputSignal(100);
- 
- termometro.setNeedleThickness(3);
+  //Sensor
+  pinMode(SensorD, INPUT);
+
+  //Atuador
+  pinMode(11, OUTPUT);
+
+  Serial.begin(9600);
+  //LEDs
+  pinMode(5, OUTPUT);  //vermelho
+  pinMode(6, OUTPUT);  //amarelo
+  pinMode(7, OUTPUT);  //verde
 }
 
-void draw() // EQUIVALE AO LOOP DO ARDUINO
-{
-  //int valores_um = (int)random(0,100);
+void loop() {
+  LeituraAnalog = analogRead(SensorD);
+  leituraSensor = digitalRead(SensorD);
   
- if(port.available()>0) {
-   String val = port.readString();
-   String [] list = split(val, ',');
-   umid = float(list[0]);
-  percent = ( 100 - ( (umid/1023.00) * 100 ) );
-  println("UMIDADE: " + umid + "\n");
-  println("PERCENT: " + percent + "% \n");
-  
-  
-  }
-  
-  // TESTE
-  termometro.updateMeter(int(percent));
+  Serial.print(LeituraAnalog);
+  Serial.print("\n");
   delay(800);
+
+
+  if (/* leituraSensor == HIGH*/ LeituraAnalog > 700) {
+    //ESTADO SECO
+    //   Serial.print("ESTADO SECO: ");
+    //  Serial.print(leituraSensor);
+    //Serial.print("\n SINAL ANALOGICO: ");
+    //Serial.print(LeituraAnalog);
+    //Serial.print("\n");
+    digitalWrite(5, HIGH);  //vermelho
+    digitalWrite(6, LOW); // Amarelo
+    digitalWrite(7, LOW);   //verde
+  } else {
+    //ESTADO ÚMIDO
+    // Serial.print("\nESTADO UMIDO //// ");
+    //  Serial.print("\n SINAL ANALOGICO: ");
+    //Serial.print(LeituraAnalog);
+    //Serial.print("\n");
+    digitalWrite(5, LOW);   //vermelho
+    digitalWrite(7, HIGH);  //verde
+  }
+
+  //ENTRAR NO ESTADO SECO
+  if (leituraSensor && !leituraAnterior) {
+    delay(5000);
+    digitalWrite(6, LOW); // Amarelo
+    digitalWrite(5, LOW);   //vermelho
+    digitalWrite(6, HIGH);  //amarelo
+
+
+    while (digitalRead(SensorD)) {
+      digitalWrite(11, LOW);   //RELÊ
+      delay(5000);
+      digitalWrite(11, HIGH);   //RELÊ
+
+      delay(5000);
+    }
+    digitalWrite(6, LOW);  //amarelo
+  }
+
+
+  leituraAnterior = leituraSensor;
 }
